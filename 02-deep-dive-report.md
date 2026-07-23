@@ -1,5 +1,11 @@
 # Phase 3 — DEEP DIVE & Phase 5 — EVALUATE
 
+## 0. Thông tin nhóm
+
+- **Tên nhóm:** 3nguoi
+- **Thành viên tham gia:**
+  - Ngô Minh Phong — minhphong131hq@gmail.com
+
 ## 1. Bài toán được chọn
 
 **Bài toán:** Xử lý sự cố pin thực địa của tài xế Xanh SM.
