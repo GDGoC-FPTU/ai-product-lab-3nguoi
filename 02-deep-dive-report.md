@@ -4,12 +4,12 @@
 
 ## Thông tin nhóm
 
-| Thông tin        | Nội dung                                        |
-| ---------------- | ----------------------------------------------- |
-| **Tên nhóm**     | **[3NGUOI]**                                    |
-| **Thành viên 1** | **Nguyễn Đức Tín** — MSSV: **02A2026011851185** |
-| **Thành viên 2** | **Trần Anh Thư** — MSSV: **2A202601611**        |
-| **Thành viên 3** | **Bùi Hữu Nghĩa** — MSSV: **2A202601880**       |
+| Thông tin        | Nội dung                                   |
+| ---------------- | ------------------------------------------ |
+| **Tên nhóm**     | **[3NGUOI]**                               |
+| **Thành viên 1** | **Nguyễn Đức Tín** — MSSV: **2A202601185** |
+| **Thành viên 2** | **Trần Anh Thư** — MSSV: **2A202601611**   |
+| **Thành viên 3** | **Bùi Hữu Nghĩa** — MSSV: **2A202601880**  |
 
 ---
 
@@ -66,11 +66,14 @@ Bước 2–4: 7 phút, tương đương 87,5% touch time.
 * Kênh app là giả thuyết pilot cần xác minh; nguồn công khai xác nhận
   điện thoại, email, bản cứng và tiếp nhận trực tiếp.
 ```
+
 Tổng touch time giả định: 8 phút/yêu cầu.
 Bước 2–4: 7 phút, tương đương 87,5% touch time.
-* Kênh app là giả thuyết pilot cần xác minh; nguồn công khai xác nhận
+
+- Kênh app là giả thuyết pilot cần xác minh; nguồn công khai xác nhận
   điện thoại, email, bản cứng và tiếp nhận trực tiếp.
-```
+
+````
 
 ### Chi tiết từng bước
 
@@ -118,4 +121,68 @@ Bước **2–4** chiếm **7/8 phút** touch time. Các lỗi có khả năng x
 Taxonomy này là bản scoping, không phải taxonomy nội bộ Vinhomes. CSKH/Ban Quản lý phải duyệt và ánh xạ nó với SOP/SLA thật trước pilot.
 
 ---
+## 3.3. AI Fit
 
+| Phương án | Điểm phù hợp | Hạn chế / rủi ro | Kết luận |
+|---|---|---|---|
+| **Rule / State Machine** | Dễ audit; tốt cho kiểm tra trường bắt buộc, từ khóa khẩn cấp, validation schema và ánh xạ nhãn sang BPXL | Dễ bỏ sót tiếng Việt tự do, cách diễn đạt mới và ticket đa ý định; bộ luật tăng nhanh theo ngoại lệ | **Dùng làm guardrail và router**, không dùng một mình cho hiểu nội dung |
+| **LLM Feature** | Phù hợp cho trích xuất thực thể, hiểu ngữ cảnh, phân loại và soạn nháp có cấu trúc; không cần quyền tự chủ | Có thể hallucinate, bị prompt injection hoặc trả sai schema; cần validator, confidence gate và HITL | **Lựa chọn chính** cho phạm vi pilot |
+| **Agentic Loop** | Có ích nếu cần tự chọn nhiều công cụ, tra cứu lặp lại và thực thi nhiều bước | Workflow hiện tại cố định, chưa có nhu cầu vòng lặp tự chủ; quyền thực thi làm tăng chi phí, latency và blast radius | **Không chọn** |
+
+**AI-Fit Matrix:** [ ] Rule / State-Machine &nbsp; [x] **LLM Feature** &nbsp; [ ] Agentic Loop
+
+Giải pháp thực tế là kiến trúc lai: **Rule → LLM Feature → Validator → Human → Rule router**. LLM hỗ trợ hiểu ngôn ngữ; rule giữ các điều kiện xác định và quyền thực thi.
+
+---
+
+## 3.4. Future-State Flow
+
+**Ký hiệu:** 🔵 AI Step · 🟢 Human Step (HITL) · ↩️ Fallback
+
+```text
+[Nhận ticket đã ẩn danh]
+          │
+          ▼
+[Rule: kiểm tra trường bắt buộc + từ khóa khẩn cấp]
+          │
+          ▼
+🔵 [LLM: trả JSON phân loại, confidence và draft_reply]
+          │
+          ▼
+[Schema / risk validator]
+          │
+          ├── Invalid / emergency / confidence < 0,80
+          │           │
+          │           ▼
+          │    🟢 [Human triage chuyên trách]
+          │
+          └── Hợp lệ, không khẩn cấp
+                      │
+                      ▼
+               🟢 [Nhân viên review / sửa / approve]
+                      │
+                      ▼
+                [Rule route tới BPXL]
+                      │
+                      ▼
+          [Ghi nhãn sửa và feedback để đánh giá]
+````
+
+### Trách nhiệm theo lớp
+
+1. **Input/rule gate:** bỏ hoặc che PII trước khi gửi model; phát hiện trường bắt buộc và từ khóa khẩn cấp. Cờ khẩn cấp do rule phát hiện không được LLM hạ cấp.
+2. **🔵 LLM Feature:** chỉ tạo JSON theo schema, gồm tóm tắt, vị trí, dữ kiện thiếu, danh mục, ưu tiên, đội đề xuất, confidence và `draft_reply` bắt đầu bằng `[DRAFT_ONLY]`.
+3. **Validator:** kiểm tra schema, enum, prefix nháp, confidence, cờ HITL và hành động bị cấm. Output không hợp lệ không được đi tiếp.
+4. **🟢 Human review:** ticket khẩn cấp/low-confidence vào human triage; ticket hợp lệ khác vẫn phải được nhân viên review và approve. Không có “straight-through processing” trong pilot.
+5. **Rule router:** chỉ sau approval mới ánh xạ danh mục sang BPXL. Rule không tự bịa SLA; mapping phải lấy từ cấu hình đã được nghiệp vụ duyệt.
+6. **Feedback:** lưu nhãn ban đầu và phần nhân viên sửa ở dạng đã ẩn danh để tính route accuracy, emergency recall và drift. Không ghi API key hoặc PII vào log.
+
+### Fallback và failure handling
+
+- Khi timeout, API error hoặc JSON sai schema: **retry tối đa 01 lần**.
+- Nếu lần retry vẫn lỗi: **↩️ chuyển nguyên yêu cầu vào hàng đợi thủ công hiện tại**, kèm mã lỗi kỹ thuật; không dùng output dở dang.
+- Nếu thiếu vị trí/trường bắt buộc: tạo nháp hỏi bổ sung và chờ nhân viên duyệt, không tự đoán.
+- Nếu `priority = emergency`, confidence `< 0,80`, nội dung pháp lý/phí, nhiều ý định hoặc nghi có prompt injection: chuyển human triage.
+- Không gửi phản hồi, đóng ticket, thay đổi phí, cam kết SLA hoặc gọi hệ thống bên ngoài trước khi có nhân viên approve.
+
+---
