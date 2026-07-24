@@ -15,7 +15,7 @@ Thông qua khảo sát thực địa tại Trung tâm Điều vận Xanh SM Hà 
 
 ---
 
-# 🔍 Phase 1 — SCAN: Tìm kiếm cơ hội (Cá nhân)
+# 🔍 Phase 1 — SCAN: Tìm kiếmcơ hội (Cá nhân)
 
 Dùng **4 Lenses** quét qua vận hành của các công ty thành viên Vingroup.
 
