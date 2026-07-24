@@ -186,3 +186,85 @@ Giải pháp thực tế là kiến trúc lai: **Rule → LLM Feature → Valida
 - Không gửi phản hồi, đóng ticket, thay đổi phí, cam kết SLA hoặc gọi hệ thống bên ngoài trước khi có nhân viên approve.
 
 ---
+
+# Phase 5 — EVALUATE
+
+## 5.1. AI Readiness Checklist
+
+| Tiêu chí                                   | Trạng thái                              | Bằng chứng / khoảng trống                                                                                                                                                   |
+| ------------------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Có dữ liệu mẫu/log sạch để test?           | [ ] **Chưa**                            | Repo chưa có ticket thật đã ẩn danh và gán nhãn; fixture tự tạo chỉ kiểm tra cấu trúc, không chứng minh chất lượng ngoài thực tế.                                           |
+| Rủi ro khi AI sai nằm trong tầm kiểm soát? | [x] **Có, trong phạm vi pilot đề xuất** | Structured output, rule gate, schema/risk validator, HITL bắt buộc, không cấp quyền auto-action và manual fallback giới hạn blast radius. Vẫn phải stress-test trước pilot. |
+| Stakeholder sẵn sàng đổi workflow?         | [ ] **Chưa xác minh**                   | Chưa có xác nhận của CSKH/Ban Quản lý về taxonomy, SOP/SLA mapping, luồng phê duyệt và trách nhiệm khi escalation.                                                          |
+
+## 5.2. Quyết định cuối cùng
+
+- [ ] **GO**
+- [x] **NOT YET — Cần dữ liệu, baseline và xác nhận stakeholder**
+- [ ] **NO-GO**
+
+### Justification
+
+LLM có fit về mặt tác vụ vì cần hiểu văn bản tự do và output có thể bị giới hạn ở dạng đề xuất. Tuy nhiên, hiện chưa đủ bằng chứng để khẳng định hiệu quả hoặc an toàn: baseline 8 phút chưa được đo trên ticket thật, chưa có tập dữ liệu gán nhãn, route taxonomy chưa được stakeholder duyệt và prototype chưa đại diện cho hệ thống vận hành. Vì vậy, quyết định trung thực là **NOT YET**, không phải GO.
+
+Đây cũng chưa phải NO-GO: rủi ro có thể giảm đáng kể bằng kiến trúc rule + validator + HITL, và chi phí inference trong scenario nhỏ hơn nhiều so với chi phí lao động giả định. Quyết định cuối phải dựa vào pilot đối chứng với keyword-rule baseline, không dựa vào demo prompt đơn lẻ.
+
+## 5.3. Điều kiện chuyển từ NOT YET sang GO
+
+Chỉ chuyển sang GO khi đáp ứng đồng thời:
+
+1. Đo touch time trên tối thiểu **100 ticket thật đã ẩn danh** và báo cáo median, P75/P95 cùng thời gian chờ tách riêng.
+2. Xây tập đánh giá tối thiểu **200 ticket thường + 100 tình huống khẩn cấp/adversarial**, có nhãn chuẩn được nghiệp vụ review.
+3. Đạt route accuracy **≥ 90%** và emergency recall **≥ 99%** trên holdout set.
+4. Có **0 boundary violation** và **0 auto-action** trong toàn bộ acceptance test.
+5. CSKH/Ban Quản lý phê duyệt taxonomy, ánh xạ đội xử lý/SLA, ngưỡng confidence và quy trình HITL/escalation.
+6. LLM cao hơn keyword-rule baseline ít nhất **5 điểm phần trăm route accuracy** trên cùng holdout set. Nếu không đạt, chọn Rule vì đơn giản và dễ audit hơn.
+
+## 5.4. Ước lượng giá trị và chi phí
+
+### Công thức tổng quát
+
+Với `N` là số ticket/tháng:
+
+- Giờ thao tác hiện tại: `N × 8 / 60`.
+- Giờ thao tác mục tiêu: `N × 2 / 60`.
+
+- Năng lực được giải phóng: `N × 6 / 60`.
+- Giá trị năng lực giả định: `(N × 6 / 60) × chi phí lao động/giờ`.
+
+### Scenario để ra quyết định sơ bộ
+
+> Đây là **scenario giả định**, không phải volume, năng suất hay chi phí nội bộ của Vinhomes.
+
+| Hạng mục              |                 Giả định / phép tính |                  Kết quả |
+| --------------------- | -----------------------------------: | -----------------------: |
+| Volume                |          `100 ticket/ngày × 22 ngày` |   **2.200 ticket/tháng** |
+| Giờ hiện tại          |                     `2.200 × 8 / 60` |      **293,3 giờ/tháng** |
+| Giờ mục tiêu          |                     `2.200 × 2 / 60` |       **73,3 giờ/tháng** |
+| Năng lực giải phóng   |                     `2.200 × 6 / 60` |        **220 giờ/tháng** |
+| Giá trị năng lực      |              `220 × 100.000 VND/giờ` | **22.000.000 VND/tháng** |
+| Chi phí pilot một lần |     `10 person-days × 1.500.000 VND` |       **15.000.000 VND** |
+| Monitoring định kỳ    | `1 person-day/tháng × 1.500.000 VND` |  **1.500.000 VND/tháng** |
+
+**Chi phí model:** Với 2.200 ticket/tháng, giả định 700 input token và 250 output token/ticket:
+
+```text
+Input  = 2.200 × 700 = 1.540.000 token
+Output = 2.200 × 250 =   550.000 token
+
+Chi phí = 1,54 × 0,30 USD + 0,55 × 2,50 USD
+         = 0,462 USD + 1,375 USD
+         = 1,837 USD ≈ 1,84 USD/tháng
+```
+
+Trang giá chính thức tại thời điểm kiểm tra **24/07/2026** niêm yết Gemini 2.5 Flash standard paid tier ở mức **0,30 USD/1 triệu input token** và **2,50 USD/1 triệu output token**. Nguồn: [Gemini Developer API pricing](https://ai.google.dev/gemini-api/docs/pricing).
+
+Con số 1,84 USD chưa gồm thuế, tỷ giá, hạ tầng, lưu trữ log, quan sát hệ thống, bảo mật, đánh giá định kỳ, token retry hoặc overhead system prompt. Giá model và tỷ giá phải được cập nhật lại vào ngày nộp/pilot.
+
+### Cách diễn giải đúng
+
+- **22 triệu VND/tháng là giá trị năng lực giả định**, không phải tiền tiết kiệm hay lợi nhuận đã hiện thực hóa.
+- Không tuyên bố ROI thực tế trước khi xác minh volume, touch time, chi phí lao động, chất lượng output và mức độ nhân sự có thể tái phân bổ.
+- Nếu LLM không vượt rule baseline tối thiểu 5 điểm phần trăm, chi phí vận hành và rủi ro bổ sung không được biện minh chỉ bởi inference rẻ.
+
+---
