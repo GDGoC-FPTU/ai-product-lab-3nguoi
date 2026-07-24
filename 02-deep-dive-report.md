@@ -66,3 +66,56 @@ Bước 2–4: 7 phút, tương đương 87,5% touch time.
 * Kênh app là giả thuyết pilot cần xác minh; nguồn công khai xác nhận
   điện thoại, email, bản cứng và tiếp nhận trực tiếp.
 ```
+Tổng touch time giả định: 8 phút/yêu cầu.
+Bước 2–4: 7 phút, tương đương 87,5% touch time.
+* Kênh app là giả thuyết pilot cần xác minh; nguồn công khai xác nhận
+  điện thoại, email, bản cứng và tiếp nhận trực tiếp.
+```
+
+### Chi tiết từng bước
+
+| Bước | Actor | Công cụ giả định / kênh | Input | Xử lý và thời gian | Output / handoff |
+|---:|---|---|---|---|---|
+| **1** | Cư dân; nhân viên CSKH/Ban Quản lý | App cư dân*, điện thoại, email | Mô tả tự do, hình ảnh, thông tin liên hệ | Tiếp nhận yêu cầu và mở đầu việc — **0,5 phút** | Bản ghi yêu cầu thô. **🔄 Handoff:** cư dân → CSKH/Ban Quản lý |
+| **2 🔴** | Nhân viên CSKH/Ban Quản lý | Hộp thư/tổng đài/app*, màn hình ticket | Bản ghi thô và ảnh đính kèm | Đọc, tóm tắt, phát hiện dữ kiện thiếu; hỏi lại khi cần — **3 phút** | Mô tả đã hiểu sơ bộ và danh sách thông tin cần bổ sung |
+| **3 🔴** | Nhân viên CSKH/Ban Quản lý | CRM/ticket system*, danh mục sự cố* | Nội dung đã đọc và thông tin địa điểm | Xác định dự án/tòa/căn, danh mục và mức ưu tiên — **2 phút** | Nhãn phân loại và ưu tiên dự kiến |
+| **4 🔴** | Nhân viên CSKH/Ban Quản lý | SOP/SLA*, CRM/ticket system* | Nhãn, ưu tiên, thông tin vị trí | Tra đơn vị phụ trách, điều kiện SLA và tạo ticket — **2 phút** | Ticket có tuyến xử lý dự kiến |
+| **5** | Nhân viên CSKH/Ban Quản lý | CRM/ticket system*, email/app* | Ticket đã tạo | Gửi xác nhận và chuyển ticket — **0,5 phút** | Xác nhận cho cư dân. **🔄 Handoff:** CSKH/Ban Quản lý → BPXL |
+
+\* Công cụ/kênh đánh dấu sao là giả định vận hành để scoping, phải được stakeholder xác nhận.
+
+### Bottleneck và failure modes
+
+Bước **2–4** chiếm **7/8 phút** touch time. Các lỗi có khả năng xảy ra:
+
+- Thiếu dự án, tòa, tầng hoặc căn nhưng nhân viên không phát hiện trước khi chuyển.
+- Một ticket chứa nhiều ý định, ví dụ vừa mất nước vừa phản ánh phí, dẫn tới chỉ gắn một nhãn.
+- Ngôn ngữ đời thường hoặc viết tắt làm chọn sai danh mục và sai bộ phận.
+- Tình huống cháy, khói, kẹt thang máy hoặc đe dọa an toàn bị đánh giá thấp mức ưu tiên.
+- Nhân viên dùng nhầm SOP/SLA hoặc tự cam kết thời hạn chưa được nguồn chính thức xác nhận.
+
+**Ngoài phép tính touch time:** thời gian chờ cư dân bổ sung dữ kiện, thời gian ticket nằm trong hàng đợi và thời gian BPXL xử lý. Pilot phải đo riêng các khoảng này để không gán nhầm toàn bộ SLA cho thao tác phân loại.
+
+---
+## 3.2. Problem Statement (6-field)
+
+| Field | Nội dung |
+|---|---|
+| **1. Actor / Operator** | **Actor chính:** nhân viên CSKH/Ban Quản lý tiếp nhận và điều phối yêu cầu. **Stakeholder:** cư dân chờ phản hồi; đội kỹ thuật, an ninh, vệ sinh, CSKH và tài chính/pháp lý nhận ticket để xử lý. |
+| **2. Current Workflow** | Nhân viên nhận yêu cầu qua các kênh, đọc mô tả/ảnh, xác định dữ kiện thiếu, vị trí, danh mục và mức ưu tiên, tra SOP/SLA, tạo ticket, gửi xác nhận rồi chuyển BPXL. Workflow giả định có 5 bước, dùng app/email/tổng đài, CRM/ticket system và SOP; tổng touch time baseline **8 phút/yêu cầu**. |
+| **3. Bottleneck** | Bước **2–4**, tổng **7 phút/yêu cầu**: hiểu văn bản tự do, phát hiện trường thiếu, phân loại ưu tiên và chọn tuyến. Lỗi trọng yếu gồm thiếu địa điểm, nhiều ý định, sai danh mục, sai bộ phận hoặc bỏ sót tình huống khẩn cấp. |
+| **4. Business Impact** | Chưa có volume Vinhomes đã xác minh nên dùng biến `N` là số ticket/tháng. Giờ hiện tại = `N × 8 / 60`; giờ mục tiêu = `N × 2 / 60`; năng lực giải phóng = `N × 6 / 60`. Chuyển sai tuyến còn làm tăng rework và thời gian chờ, nhưng chưa quy đổi thành tiền nếu chưa có log. |
+| **5. Success Metric** | (1) Median handling time từ **8 xuống ≤ 2 phút/ticket**; (2) route accuracy **≥ 90%** trên tập gán nhãn; (3) emergency recall **≥ 99%**; (4) **100%** ticket khẩn cấp hoặc confidence `< 0,80` vào hàng đợi người duyệt; (5) **0** ticket tự gửi, tự đóng hoặc tự cam kết SLA. |
+| **6. Operational Boundary** | AI chỉ đọc ticket **đã ẩn danh**, trích xuất trường, đề xuất danh mục/ưu tiên/bộ phận và soạn phản hồi nháp. **CẤM:** tự gửi hoặc đóng ticket; sửa phí; quyết định bồi thường; kết luận trách nhiệm pháp lý; tiết lộ PII; bịa địa điểm, chính sách hay SLA. Mọi phản hồi/hành động ra ngoài bắt buộc có **Human-in-the-loop** phê duyệt. |
+
+### Taxonomy dùng chung cho prototype và pilot
+
+- **Danh mục:** `technical`, `security`, `sanitation`, `noise`, `utility`, `billing`, `legal`, `other`.
+- **Mức ưu tiên:** `emergency`, `high`, `normal`.
+- **Đội đề xuất:** `engineering`, `security`, `housekeeping`, `customer_service`, `finance_legal`, `human_triage`.
+- **Hành động đề xuất:** `draft_route`, `request_missing_info`, `escalate_human`, `reject_out_of_scope`.
+
+Taxonomy này là bản scoping, không phải taxonomy nội bộ Vinhomes. CSKH/Ban Quản lý phải duyệt và ánh xạ nó với SOP/SLA thật trước pilot.
+
+---
+
