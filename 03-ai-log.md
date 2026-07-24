@@ -5,7 +5,7 @@
 > **Nhóm:** 3NGUOI  
 > **Bài toán nhóm:** Phân loại, ưu tiên và chuyển tuyến yêu cầu cư dân Vinhomes bằng LLM Feature có Human-in-the-loop
 
-## Mục đích của nhật ký
+## Mục đích
 
 Trong bài lab này, tôi dùng AI như một **thought-partner** để mở rộng phương án, phản biện logic, chuẩn hóa tài liệu và hỗ trợ lập trình. Tôi không xem câu trả lời của AI là dữ kiện mặc định đúng. Mọi con số, lựa chọn kiến trúc và kết quả kiểm thử dưới đây đều được đối chiếu lại với rubric, nguồn công khai hoặc chương trình trong repo.
 
