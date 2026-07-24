@@ -1,2 +1,3 @@
-# Environment Dependencies
-# List all required python packages here.
+# Environment dependencies for the Gemini structured-output prototype.
+google-genai==2.14.0
+pydantic>=2,<3
